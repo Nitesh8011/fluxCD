@@ -1,0 +1,19 @@
+minikube start -p staging \
+  --cpus=2 \
+  --memory=4096 \
+  --driver=docker
+
+minikube start -p production \
+  --cpus=2 \
+  --memory=4096 \
+  --driver=docker
+
+
+export GITHUB_TOKEN=github_pat_****
+
+flux bootstrap github \
+  --owner=Nitesh8011 \
+  --repository=fluxCD \
+  --branch=master \
+  --path=./clusters/staging \
+  --personal

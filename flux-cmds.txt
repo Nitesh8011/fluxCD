@@ -1,0 +1,8 @@
+flux --help
+
+Here are some of the main features of the cli:
+
+bootstrap - This command will install flux on your cluster, update flux to a newer version, reinstall extra components if needed.
+check - Will verify that your cluster meets the requirements for flux to run.
+create - commands that allow you to create flux custom resources (Usually you will use it to create the resources locally with the --export flag and then commit them to the git repository)
+reconcile - Means syncing the flux controllers and update k8s cluster state if needed.
