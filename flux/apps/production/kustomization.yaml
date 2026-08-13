@@ -1,3 +1,4 @@
+namespace: production-kustomize-ns
 resources:
   - namespace.yaml
   - ../base
