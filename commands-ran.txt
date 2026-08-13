@@ -20,3 +20,22 @@ flux bootstrap github \
 
 
 https://fluxcd.io/flux/cmd/flux_bootstrap_github/ - for other github bootstrap cmds
+
+Staging:
+flux bootstrap github \
+  --owner=Nitesh8011 \
+  --repository=fluxCD \
+  --branch=master \
+  --path=./clusters/staging \
+  --context=staging \
+  --personal
+
+
+Production:
+flux bootstrap github \
+  --owner=Nitesh8011 \
+  --repository=fluxCD \
+  --branch=master \
+  --path=./clusters/production \
+  --context=production \
+  --personal
