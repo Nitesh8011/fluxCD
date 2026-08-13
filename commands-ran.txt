@@ -17,3 +17,6 @@ flux bootstrap github \
   --branch=master \
   --path=./clusters/staging \
   --personal
+
+
+https://fluxcd.io/flux/cmd/flux_bootstrap_github/ - for other github bootstrap cmds
