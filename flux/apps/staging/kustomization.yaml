@@ -1,3 +1,4 @@
+namespace: staging-kustomize-ns
 resources:
   - namespace.yaml
   - ../base
