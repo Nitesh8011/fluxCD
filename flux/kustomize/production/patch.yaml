@@ -1,8 +1,3 @@
-patches:
-  - target:
-      kind: Deployment
-      name: nginx-d
-    patch: |-
-      - op: replace
-        path: /spec/replicas
-        value: 3
+- op: replace
+  path: /spec/replicas
+  value: 3
