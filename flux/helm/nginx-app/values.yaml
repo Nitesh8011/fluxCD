@@ -1,0 +1,26 @@
+namespace: default-helm-ns
+
+replicaCount: 1
+
+image:
+  repository: nginx
+  tag: latest
+
+service:
+  port: 80
+  targetPort: 80
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 250m
+    memory: 256Mi
+
+indexHtml: |
+  <html>Hey, I'm deployed via Helm</html>
+
+env:
+  ENVIRONMENT: dev
+  LOG_LEVEL: info
