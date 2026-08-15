@@ -1,6 +1,6 @@
 namespace: staging-helm-ns
 
-replicaCount: 
+replicaCount: 1
 
 image:
   repository: nginx
