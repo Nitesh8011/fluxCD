@@ -1,0 +1,26 @@
+namespace: production-helm-ns
+
+replicaCount: 3
+
+image:
+  repository: nginx
+  tag: stable
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 64Mi
+  limits:
+    cpu: 100m
+    memory: 128Mi
+
+indexHtml: |
+  <html>Hey, I'm deployed on production cluster!!</html>
+
+env:
+  ENVIRONMENT: production
+  LOG_LEVEL: info
+
+service:
+  port: 80
+  targetPort: 80
