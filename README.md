@@ -5,28 +5,59 @@ Learning FluxCD from scratch — GitOps continuous delivery for Kubernetes using
 ## Status
 
 - ✅ Kustomization chapter — done
-- ⏭️ Helm chapter — next
+- ✅ Helm chapter — nginx-app chart wired up for staging + production
+- ⏭️ Jenkins CI — Jenkinsfile added, needs a running Jenkins to wire up
+- ⏭️ Flux monitoring — not started, see Roadmap
 
 ## Repo layout
 
 ```text
 clusters/
   staging/
-    flux-system/        # Flux-managed bootstrap manifests (gotk-components, gotk-sync)
-    kustomization.yaml   # points at flux/kustomize/staging
-    staging.yaml
+    flux-system/         # Flux-managed bootstrap manifests (gotk-components, gotk-sync)
+    staging-kustomize.yaml  # points at flux/kustomize/staging
+    staging-helm.yaml       # points at flux/helm/releases/staging
   production/
     flux-system/
-    kustomization.yaml   # points at flux/kustomize/production
-    production.yaml
+    production-kustomize.yaml  # points at flux/kustomize/production
+    production-helm.yaml       # points at flux/helm/releases/production
 
 flux/kustomize/
   base/                  # shared deployment + service
   staging/                # staging overlay (namespace, configmap)
   production/             # production overlay (namespace, configmap)
+
+flux/helm/
+  nginx-app/              # Helm chart (Chart.yaml, templates/, values.yaml + per-env values files)
+  releases/
+    staging/               # HelmRelease pointing at nginx-app + values-staging.yaml
+    production/             # HelmRelease pointing at nginx-app + values-production.yaml
+
+Jenkinsfile               # CI: helm lint, helm template, kustomize build (see below)
 ```
 
-Each cluster's `kustomization.yaml` under `clusters/<env>` references the matching overlay in `flux/kustomize/<env>`, which itself builds on `flux/kustomize/base`.
+Each cluster's Kustomization under `clusters/<env>` references the matching overlay in `flux/kustomize/<env>` (built on `flux/kustomize/base`) or the matching HelmRelease in `flux/helm/releases/<env>` (built on the shared `flux/helm/nginx-app` chart).
+
+## Helm chart gotchas (learned the hard way)
+
+- `flux/helm/nginx-app/values.yaml` is the chart's **default** values, always loaded first by Helm even though no `HelmRelease` references it directly. The per-env `values-staging.yaml` / `values-production.yaml` only override what they set — anything else still comes from `values.yaml`.
+- The `HelmChart` Flux generates for a git-sourced chart defaults to `reconcileStrategy: ChartVersion`. That means editing a values file (or any file under the chart path) does **not** trigger a repackage/upgrade on its own — only bumping `Chart.yaml`'s `version:` does. Forgot this once and staging kept deploying stale `replicaCount` values even after the git commit was correct.
+- Both `staging` and `production` HelmReleases track the same `master` branch and the same chart path, so there's only ever one `Chart.yaml` version live for both environments at a time — you can't pin prod to an older chart version without pointing its `GitRepository` at a different ref/tag.
+
+## CI (Jenkins)
+
+A `Jenkinsfile` at the repo root runs on every change:
+
+- `helm lint` on `flux/helm/nginx-app`
+- `helm template` against both `values-staging.yaml` and `values-production.yaml`
+- `kubectl kustomize` build for every kustomize overlay and cluster path
+
+It only validates that charts/overlays render cleanly — no cluster access, no deploys. Point a Jenkins multibranch pipeline at this repo to pick it up.
+
+## Roadmap
+
+- **Flux monitoring**: expose Flux controller health/drift to something observable — options considered: Prometheus `ServiceMonitor`s for the `flux-system` controllers + a Grafana dashboard, or a simpler scheduled job running `flux check` / `flux get all -A` and alerting on failure. Not implemented yet, revisit once a monitoring stack exists in-cluster.
+- **CI schema validation**: extend the Jenkinsfile with `kubeconform`/`kubeval` to schema-check rendered manifests, not just confirm they render.
 
 ## Flux CLI cheat sheet
 
