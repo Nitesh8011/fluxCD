@@ -2,4 +2,12 @@ namespace: production-kustomize-ns
 resources:
   - namespace.yaml
   - ../base
-  - configmap.yaml
+
+configMapGenerator:
+  - name: nginx-index-html
+    files:
+      - index.html
+  - name: nginx-env-config
+    literals:
+      - ENVIRONMENT=production
+      - LOG_LEVEL=info
