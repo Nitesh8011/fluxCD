@@ -5,7 +5,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
-  path: ./flux/apps/staging
+  path: ./flux/kustomize/staging
   prune: true
   sourceRef:
     kind: GitRepository

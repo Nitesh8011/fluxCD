@@ -13,20 +13,20 @@ Learning FluxCD from scratch — GitOps continuous delivery for Kubernetes using
 clusters/
   staging/
     flux-system/        # Flux-managed bootstrap manifests (gotk-components, gotk-sync)
-    kustomization.yaml   # points at flux/apps/staging
+    kustomization.yaml   # points at flux/kustomize/staging
     staging.yaml
   production/
     flux-system/
-    kustomization.yaml   # points at flux/apps/production
+    kustomization.yaml   # points at flux/kustomize/production
     production.yaml
 
-flux/apps/
+flux/kustomize/
   base/                  # shared deployment + service
   staging/                # staging overlay (namespace, configmap)
   production/             # production overlay (namespace, configmap)
 ```
 
-Each cluster's `kustomization.yaml` under `clusters/<env>` references the matching overlay in `flux/apps/<env>`, which itself builds on `flux/apps/base`.
+Each cluster's `kustomization.yaml` under `clusters/<env>` references the matching overlay in `flux/kustomize/<env>`, which itself builds on `flux/kustomize/base`.
 
 ## Flux CLI cheat sheet
 
