@@ -6,7 +6,7 @@ Learning FluxCD from scratch — GitOps continuous delivery for Kubernetes using
 
 - ✅ Kustomization chapter — done
 - ✅ Helm chapter — nginx-app chart wired up for staging + production
-- ✅ Monitoring chart — single-pod Prometheus/Loki/Grafana chart wired to staging only, for testing
+- ✅ Monitoring chart — single-pod Prometheus/Loki/Grafana chart wired to staging + production
 - ⏭️ Jenkins CI — Jenkinsfile added, needs a running Jenkins to wire up
 - ⏭️ Flux controller monitoring (dashboards/alerts on Flux itself) — not started, see Roadmap
 
@@ -21,8 +21,9 @@ clusters/
     staging-monitoring.yaml  # points at flux/helm/releases/monitoring (staging only)
   production/
     flux-system/
-    production-kustomize.yaml  # points at flux/kustomize/production
-    production-helm.yaml       # points at flux/helm/releases/production
+    production-kustomize.yaml    # points at flux/kustomize/production
+    production-helm.yaml         # points at flux/helm/releases/production
+    production-monitoring.yaml   # points at flux/helm/releases/monitoring
 
 flux/kustomize/
   base/                  # shared deployment + service
@@ -35,13 +36,14 @@ flux/helm/
     staging/               # HelmRelease pointing at nginx-app + values-staging.yaml
     production/             # HelmRelease pointing at nginx-app + values-production.yaml
     monitoring/              # HelmRelease pointing at flux/monitoring, targetNamespace flux-monitoring-ns
+                             # reused by both staging-monitoring.yaml and production-monitoring.yaml
 
 flux/monitoring/          # Umbrella Helm chart: single-pod Prometheus + Loki + Grafana, for testing only
 
 Jenkinsfile               # CI: helm lint, helm template, kustomize build (see below)
 ```
 
-Each cluster's Kustomization under `clusters/<env>` references the matching overlay in `flux/kustomize/<env>` (built on `flux/kustomize/base`) or the matching HelmRelease in `flux/helm/releases/<env>` (built on the shared `flux/helm/nginx-app` chart). The monitoring stack is currently wired to staging only, via `clusters/staging/staging-monitoring.yaml`.
+Each cluster's Kustomization under `clusters/<env>` references the matching overlay in `flux/kustomize/<env>` (built on `flux/kustomize/base`) or the matching HelmRelease in `flux/helm/releases/<env>` (built on the shared `flux/helm/nginx-app` chart). The monitoring stack is wired to both staging (`clusters/staging/staging-monitoring.yaml`) and production (`clusters/production/production-monitoring.yaml`), both pointing at the same `flux/helm/releases/monitoring/helmrelease.yaml`.
 
 ## Helm chart gotchas (learned the hard way)
 
@@ -59,26 +61,33 @@ A `Jenkinsfile` at the repo root runs on every change:
 
 It only validates that charts/overlays render cleanly — no cluster access, no deploys. Point a Jenkins multibranch pipeline at this repo to pick it up.
 
-## Installing the monitoring stack (staging)
+## Installing the monitoring stack
 
 The `flux/monitoring` chart (Prometheus + Loki + Grafana, single pod each, no persistence) is wired
-into staging via `clusters/staging/staging-monitoring.yaml` → `flux/helm/releases/monitoring/helmrelease.yaml`.
-It's not on production.
+into both clusters, each via its own Kustomization pointing at the same
+`flux/helm/releases/monitoring/helmrelease.yaml`:
+
+- staging: `clusters/staging/staging-monitoring.yaml`
+- production: `clusters/production/production-monitoring.yaml`
 
 1. Commit and push the changes:
 
    ```bash
-   git add flux/monitoring flux/helm/releases/monitoring clusters/staging/staging-monitoring.yaml clusters/staging/kustomization.yaml
-   git commit -m "Wire up monitoring stack on staging"
+   git add flux/monitoring flux/helm/releases/monitoring \
+     clusters/staging/staging-monitoring.yaml clusters/staging/kustomization.yaml \
+     clusters/production/production-monitoring.yaml clusters/production/kustomization.yaml
+   git commit -m "Wire up monitoring stack on staging and production"
    git push
    ```
 
-2. Force Flux to pick it up immediately instead of waiting on the sync interval:
+2. Force Flux to pick it up immediately on each cluster instead of waiting on the sync interval:
 
    ```bash
-   flux reconcile source git flux-system --context=staging
-   flux reconcile kustomization flux-system --context=staging --with-source
-   flux reconcile kustomization apps-monitoring --context=staging
+   for ctx in staging production; do
+     flux reconcile source git flux-system --context=$ctx
+     flux reconcile kustomization flux-system --context=$ctx --with-source
+     flux reconcile kustomization apps-monitoring --context=$ctx
+   done
    ```
 
 3. Watch it come up:
@@ -86,10 +95,13 @@ It's not on production.
    ```bash
    flux get helmrelease monitoring -n flux-system --context=staging
    kubectl get pods -n flux-monitoring-ns --context=staging
+
+   flux get helmrelease monitoring -n flux-system --context=production
+   kubectl get pods -n flux-monitoring-ns --context=production
    ```
 
-`spec.install.createNamespace: true` on the `HelmRelease` handles creating `flux-monitoring-ns` — the
-chart itself has no `namespace.yaml` template (unlike `nginx-app`).
+`spec.install.createNamespace: true` on the `HelmRelease` handles creating `flux-monitoring-ns` on
+each cluster — the chart itself has no `namespace.yaml` template (unlike `nginx-app`).
 
 ## Roadmap
 

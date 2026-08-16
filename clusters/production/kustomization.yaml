@@ -4,3 +4,4 @@ resources:
 - flux-system
 - production-kustomize.yaml
 - production-helm.yaml
+- production-monitoring.yaml
