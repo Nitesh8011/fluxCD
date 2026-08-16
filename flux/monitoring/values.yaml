@@ -1,6 +1,10 @@
 # Minimal, single-pod footprint for each component. Not for production use —
-# no HA, no persistence, small resource requests. Meant for testing Flux
-# reconciliation/monitoring, not for storing real metrics/logs long-term.
+# no HA, small resource requests. Meant for testing Flux reconciliation/monitoring,
+# not for storing real metrics/logs long-term.
+#
+# Loki needs a small PVC even here: its containers run with a read-only root
+# filesystem, so /var/loki must come from a mounted volume or the pod crashloops
+# on "mkdir /var/loki: read-only file system".
 
 prometheus:
   server:
@@ -42,7 +46,8 @@ loki:
   singleBinary:
     replicas: 1
     persistence:
-      enabled: false
+      enabled: true
+      size: 2Gi
     resources:
       requests:
         cpu: 100m
