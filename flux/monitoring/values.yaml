@@ -29,6 +29,10 @@ prometheus:
 
 loki:
   deploymentMode: SingleBinary
+  containerSecurityContext:
+    readOnlyRootFilesystem: false
+    runAsNonRoot: false
+    runAsUser: 0
   loki:
     commonConfig:
       replication_factor: 1
