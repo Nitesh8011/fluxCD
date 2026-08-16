@@ -4,3 +4,4 @@ resources:
 - flux-system
 - staging-kustomize.yaml
 - staging-helm.yaml
+- staging-monitoring.yaml

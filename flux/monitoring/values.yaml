@@ -1,0 +1,100 @@
+# Minimal, single-pod footprint for each component. Not for production use —
+# no HA, no persistence, small resource requests. Meant for testing Flux
+# reconciliation/monitoring, not for storing real metrics/logs long-term.
+
+prometheus:
+  server:
+    replicaCount: 1
+    persistentVolume:
+      enabled: false
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+  alertmanager:
+    enabled: false
+  prometheus-node-exporter:
+    enabled: false
+  prometheus-pushgateway:
+    enabled: false
+  kube-state-metrics:
+    enabled: false
+
+loki:
+  deploymentMode: SingleBinary
+  loki:
+    commonConfig:
+      replication_factor: 1
+    storage:
+      type: filesystem
+    schemaConfig:
+      configs:
+        - from: "2024-01-01"
+          store: tsdb
+          object_store: filesystem
+          schema: v13
+          index:
+            prefix: index_
+            period: 24h
+  singleBinary:
+    replicas: 1
+    persistence:
+      enabled: false
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+  read:
+    replicas: 0
+  write:
+    replicas: 0
+  backend:
+    replicas: 0
+  gateway:
+    enabled: false
+  chunksCache:
+    enabled: false
+  resultsCache:
+    enabled: false
+  test:
+    enabled: false
+  monitoring:
+    serviceMonitor:
+      enabled: false
+    selfMonitoring:
+      enabled: false
+    lokiCanary:
+      enabled: false
+
+grafana:
+  replicas: 1
+  persistence:
+    enabled: false
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+  adminUser: admin
+  adminPassword: admin
+  datasources:
+    datasources.yaml:
+      apiVersion: 1
+      datasources:
+        - name: Prometheus
+          type: prometheus
+          url: http://monitoring-prometheus-server
+          access: proxy
+          isDefault: true
+        - name: Loki
+          type: loki
+          url: http://monitoring-loki
+          access: proxy
